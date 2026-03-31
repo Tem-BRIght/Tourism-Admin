@@ -1,0 +1,50 @@
+<ion-content fullscreen>
+  <div class="container">
+
+    <!-- LOGIN CARD -->
+    <div class="login-card">
+      <h2 class="title">See Ways</h2>
+      <p class="subtitle">Pasig City Tourism Management System</p>
+
+      <ion-item lines="none">
+        <ion-label position="stacked">Email Address</ion-label>
+        <ion-input
+          type="email"
+          placeholder="admin@pasigtourism.gov.ph"
+          [(ngModel)]="email"
+          name="email">
+        </ion-input>
+      </ion-item>
+
+      <ion-item lines="none">
+        <ion-label position="stacked">Password</ion-label>
+        <ion-input
+          type="password"
+          placeholder="••••••••"
+          [(ngModel)]="password"
+          name="password">
+        </ion-input>
+      </ion-item>
+
+      <div class="options">
+        <div class="remember">
+          <ion-checkbox [(ngModel)]="rememberMe" name="rememberMe"></ion-checkbox>
+          <span>Remember me</span>
+        </div>
+        <a class="forgot">Forgot password?</a>
+      </div>
+
+      <ion-button expand="block" class="login-btn" (click)="login()" [disabled]="isLoading">
+        {{ isLoading ? 'Logging in...' : 'Login' }}
+      </ion-button>
+
+      <p class="secured">Secured by Pasig City Government</p>
+    </div>
+
+    <!-- BRANDING -->
+    <div class="branding">
+      <img src="../assets/icon/pasig-logo.png" alt="Pasig City Logo">
+    </div>
+
+  </div>
+</ion-content>

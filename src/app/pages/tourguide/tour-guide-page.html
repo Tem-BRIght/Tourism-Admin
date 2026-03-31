@@ -1,0 +1,210 @@
+<ion-content>
+  <div class="app-wrapper">
+    
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <h3>Tourism Admin</h3>
+      </div>
+      
+      <ul class="sidebar-menu">
+        <li><a (click)="navigateTo('dashboard')">Dashboard</a></li>
+        <li><a (click)="navigateTo('bookings')" class="active">Tour Guide Bookings</a></li>
+        <li><a (click)="navigateTo('feedback')">Feedback & Ratings</a></li>
+        <li><a (click)="navigateTo('monitoring')">Monitor Real-Time Activity</a></li>
+        <li><a (click)="navigateTo('number-of-tourist')">Number of Tourist / Tours</a></li>
+        <li><a (click)="navigateTo('destinations')">Destinations</a></li>
+        <li class="sidebar-section-label">Manage Accounts</li>
+        <li>
+        <li><a (click)="navigateTo('tour-guides')">Tour Guides</a></li>
+        <li><a (click)="navigateTo('users')">Users</a></li>
+        <li class="logout"><a (click)="logout()">Logout</a></li>
+      </ul>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div class="main-content">
+      <div class="top-bar">
+        <h2>Tour Guide Bookings</h2>
+        <span class="badge">Total: <strong>100</strong></span>
+      </div>
+
+      <!-- STATS CARDS -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon ongoing">🔄</div>
+          <div class="stat-details">
+            <span class="stat-label">On-going</span>
+            <span class="stat-number">{{ getTotalOngoing() }}</span>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon completed">✓</div>
+          <div class="stat-details">
+            <span class="stat-label">Completed</span>
+            <span class="stat-number">{{ getTotalCompleted() }}</span>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon cancelled">✗</div>
+          <div class="stat-details">
+            <span class="stat-label">Cancelled</span>
+            <span class="stat-number">{{ getTotalCancelled() }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- FILTERS CARD -->
+      <div class="filters-card">
+        <h4>Filter Bookings</h4>
+        <div class="filters-grid">
+          <div class="filter-group">
+            <label>Tour Guide Name</label>
+            <input 
+              type="text" 
+              placeholder="Enter name..." 
+              class="filter-input"
+              [(ngModel)]="filterName"
+              (input)="applyFilters()">
+          </div>
+          
+          <div class="filter-group">
+            <label>Tour Date</label>
+            <input 
+              type="date" 
+              class="filter-input"
+              [(ngModel)]="filterDate"
+              (change)="applyFilters()">
+          </div>
+          
+          <div class="filter-group">
+            <label>Status</label>
+            <select 
+              class="filter-input"
+              [(ngModel)]="filterStatus"
+              (change)="applyFilters()">
+              <option value="All">All Status</option>
+              <option value="On-going">On-going</option>
+              <option value="Completed">Completed</option>
+              <option value="Cancelled">Cancelled</option>
+            </select>
+          </div>
+
+          <div class="filter-group filter-actions">
+            <button class="btn-reset" (click)="resetFilters()">Clear Filters</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- BOOKINGS TABLE -->
+      <div class="table-card">
+        <table>
+          <thead>
+            <tr>
+              <th>Booking ID</th>
+              <th>Tour Guide</th>
+              <th>Tour Date</th>
+              <th class="text-center">Tourists</th>
+              <th>Status</th>
+              <th class="text-center">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let booking of paginatedBookings">
+              <td><span class="booking-id">{{ booking.id }}</span></td>
+              <td>{{ booking.guideName }}</td>
+              <td>{{ booking.tourDate }}</td>
+              <td class="text-center">{{ booking.tourists }}</td>
+              <td>
+                <span class="status-badge" 
+                      [class.ongoing]="booking.status === 'On-going'"
+                      [class.completed]="booking.status === 'Completed'"
+                      [class.cancelled]="booking.status === 'Cancelled'">
+                  {{ booking.status }}
+                </span>
+              </td>
+              <td class="text-center">
+                <button class="action-link view" (click)="viewTouristInfo(booking)">View</button>
+                <span class="action-separator">|</span>
+                <button class="action-link cancel" (click)="cancelBooking(booking.id)">Cancel</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- PAGINATION -->
+      <div class="pagination">
+        <span class="pagination-info">
+          Showing {{ (currentPage-1)*itemsPerPage + 1 }} - 
+          {{ currentPage*itemsPerPage > totalItems ? totalItems : currentPage*itemsPerPage }} 
+          of {{ totalItems }}
+        </span>
+        <div class="pagination-controls">
+          <button class="page-btn" (click)="previousPage()" [disabled]="currentPage === 1">‹ Prev</button>
+          <button class="page-btn" *ngFor="let page of getPageArray()" 
+                  (click)="changePage(page)" [class.active]="currentPage === page">{{ page }}</button>
+          <button class="page-btn" (click)="nextPage()" [disabled]="currentPage === totalPages">Next ›</button>
+        </div>
+      </div>
+
+      <!-- TOURIST INFORMATION MODAL - FINAL VERSION -->
+      <div class="modal-overlay" *ngIf="showTouristModal" (click)="closeModal()">
+        <div class="modal-container tourist-modal" (click)="$event.stopPropagation()">
+          <div class="modal-header">
+            <h3>Tourist Information</h3>
+            <button class="modal-close" (click)="closeModal()">×</button>
+          </div>
+
+          <div class="modal-body" *ngIf="selectedTourist">
+            <!-- Booking Summary - Clean with proper spacing -->
+            <div class="booking-summary">
+              <div class="summary-item">
+                <span class="summary-label">Destination</span>
+                <span class="summary-value">{{ selectedTourist.destination }}</span>
+              </div>
+              <div class="summary-item">
+                <span class="summary-label">Tour Date</span>
+                <span class="summary-value">{{ selectedTourist.tourDate }}</span>
+              </div>
+              <div class="summary-item">
+                <span class="summary-label">Tour Guide</span>
+                <span class="summary-value">{{ selectedTourist.guideName }}</span>
+              </div>
+              <div class="summary-item">
+                <span class="summary-label">Total Tourists</span>
+                <span class="summary-value">{{ selectedTourist.tourists }}</span>
+              </div>
+            </div>
+
+            <!-- Tourist List - Shows all tourists with names and emails -->
+            <div class="tourist-list-section">
+              <h4>Tourist List ({{ selectedTourist.tourists }} people)</h4>
+              <table class="tourist-table">
+                <thead>
+                  <tr>
+                    <th style="width: 50px">#</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let tourist of selectedTourist.touristList; let i = index">
+                    <td>{{ i + 1 }}</td>
+                    <td>{{ tourist.name }}</td>
+                    <td>{{ tourist.email }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button class="btn-close" (click)="closeModal()">Close</button>
+          </div>
+        </div>
+      </div>
+
+    </div> <!-- END main-content -->
+  </div> <!-- END app-wrapper -->
+</ion-content>

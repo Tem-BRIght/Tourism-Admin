@@ -1,0 +1,513 @@
+<ion-content>
+  <div class="app-wrapper">
+    
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <h3>Tourism Admin</h3>
+      </div>
+      
+      <ul class="sidebar-menu">
+        <li><a (click)="navigateTo('dashboard')">Dashboard</a></li>
+        <li><a (click)="navigateTo('bookings')">Tour Guide Bookings</a></li>
+        <li><a (click)="navigateTo('feedback')">Feedback & Ratings</a></li>
+        <li><a (click)="navigateTo('monitoring')">Monitor Real-Time Activity</a></li>
+        <li><a (click)="navigateTo('number-of-tourist')">Number of Tourist / Tours</a></li>
+        <li><a (click)="navigateTo('destinations')" class="active">Destinations</a></li>
+        <li class="sidebar-section-label">Manage Accounts</li>
+        <li>
+        <li><a (click)="navigateTo('tour-guides')">Tour Guides</a></li>
+        <li><a (click)="navigateTo('users')">Users</a></li>
+        <li class="logout"><a (click)="logout()">Logout</a></li>
+      </ul>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div class="main-content">
+      <div class="top-bar">
+        <h2>Destination Content</h2>
+        <div class="top-bar-actions">
+          <button class="btn-primary" (click)="openCreateModal()">
+            + Add New Content
+          </button>
+        </div>
+      </div>
+
+      <!-- STATS CARDS -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon blue">📄</div>
+          <div class="stat-details">
+            <span class="stat-label">Total Contents</span>
+            <span class="stat-number">{{ contents.length }}</span>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon green">✓</div>
+          <div class="stat-details">
+            <span class="stat-label">Published</span>
+            <span class="stat-number">{{ getTotalPublished() }}</span>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon orange">✎</div>
+          <div class="stat-details">
+            <span class="stat-label">Drafts</span>
+            <span class="stat-number">{{ getTotalDraft() }}</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- SIMPLE SEARCH -->
+      <div class="filters-card">
+        <h4>Search Contents</h4>
+        <div class="filters-grid">
+          <div class="filter-group">
+            <input 
+              type="text" 
+              placeholder="Search by title or description..." 
+              class="filter-input"
+              [(ngModel)]="searchTerm"
+              (input)="applyFilters()">
+          </div>
+          <div class="filter-group filter-actions">
+            <button class="btn-reset" (click)="resetFilters()">Clear</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ERROR BANNER -->
+      <div class="error-banner" *ngIf="errorMessage">
+        ⚠️ {{ errorMessage }}
+        <button class="modal-close" (click)="errorMessage = ''" style="font-size:16px;margin-left:auto;">×</button>
+      </div>
+
+      <!-- SKELETON LOADER -->
+      <div class="contents-grid" *ngIf="isFetching">
+        <div class="content-card" *ngFor="let i of [1,2,3,4,5,6]" style="pointer-events:none;">
+          <div class="content-image" style="background:#ecf0f1;animation:shimmer 1.4s infinite;background:linear-gradient(90deg,#ecf0f1 25%,#f8f9fa 50%,#ecf0f1 75%);background-size:600px 100%;"></div>
+          <div class="content-details">
+            <div style="height:18px;width:60%;background:linear-gradient(90deg,#ecf0f1 25%,#f8f9fa 50%,#ecf0f1 75%);background-size:600px 100%;border-radius:4px;margin-bottom:10px;animation:shimmer 1.4s infinite;"></div>
+            <div style="height:13px;width:100%;background:linear-gradient(90deg,#ecf0f1 25%,#f8f9fa 50%,#ecf0f1 75%);background-size:600px 100%;border-radius:4px;margin-bottom:6px;animation:shimmer 1.4s infinite;"></div>
+            <div style="height:13px;width:80%;background:linear-gradient(90deg,#ecf0f1 25%,#f8f9fa 50%,#ecf0f1 75%);background-size:600px 100%;border-radius:4px;animation:shimmer 1.4s infinite;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CONTENTS LIST -->
+      <div class="contents-grid" *ngIf="!isFetching">
+        <div class="content-card" *ngFor="let content of paginatedContents">
+          <div class="content-image">
+            <img [src]="content.imageUrl" [alt]="content.title" onerror="this.src='assets/placeholder.jpeg'">
+            <div class="content-status"
+                 [class.published]="content.status === 'published' && content.tempStatus !== 'Temporarily Closed'"
+                 [class.draft]="content.status === 'draft' && content.tempStatus !== 'Temporarily Closed'"
+                 [class.temp-closed]="content.tempStatus === 'Temporarily Closed'">
+              {{ content.tempStatus === 'Temporarily Closed' ? '🔒 Temp Closed' : (content.status === 'published' ? 'Published' : 'Draft') }}
+            </div>
+            <div class="top-rank-badge" *ngIf="getRank(content.title)" [attr.data-rank]="getRank(content.title)">
+              #{{ getRank(content.title) }}
+            </div>
+          </div>
+          <div class="content-details">
+            <h3>{{ content.title || '(Untitled)' }}</h3>
+            <p class="content-description">{{ (content.shortDescription || content.fullDescription || content.location | slice:0:150) }}{{ (content.shortDescription || content.fullDescription || '').length > 150 ? '...' : '' }}</p>
+            <div class="content-meta">
+              <span class="content-date">Updated: {{ content.updatedAt }}</span>
+              <span class="content-location">📍 {{ content.location }}</span>
+            </div>
+            <div class="content-actions">
+              <button class="action-link view" (click)="viewContent(content)">View</button>
+              <span class="action-separator">|</span>
+              <button class="action-link edit" (click)="openEditModal(content)">Edit</button>
+              <span class="action-separator">|</span>
+              <button class="action-link delete" (click)="confirmDelete(content)">Delete</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- NO RESULTS -->
+      <div class="no-results" *ngIf="!isFetching && filteredContents.length === 0">
+        No destinations found. <button class="action-link view" (click)="resetFilters()">Clear filters</button>
+      </div>
+
+      <!-- PAGINATION -->
+      <div class="pagination" *ngIf="!isFetching && filteredContents.length > 0">
+        <span class="pagination-info">
+          Showing {{ (currentPage-1)*itemsPerPage + 1 }} - 
+          {{ currentPage*itemsPerPage > filteredContents.length ? filteredContents.length : currentPage*itemsPerPage }} 
+          of {{ filteredContents.length }}
+        </span>
+        <div class="pagination-controls">
+          <button class="page-btn" (click)="previousPage()" [disabled]="currentPage === 1">‹ Prev</button>
+          <button class="page-btn" *ngFor="let page of getPageArray()" 
+                  (click)="changePage(page)" [class.active]="currentPage === page">{{ page }}</button>
+          <button class="page-btn" (click)="nextPage()" [disabled]="currentPage === totalPages">Next ›</button>
+        </div>
+      </div>
+
+      <!-- CONTENT MODAL - Google Forms Style with Multiple Fields -->
+      <div class="modal-overlay" *ngIf="showContentModal" (click)="closeModal()">
+        <div class="modal-container content-modal" (click)="$event.stopPropagation()">
+          <div class="modal-header">
+            <h3>{{ isEditing ? 'Edit Content' : (selectedContent && !isEditing ? 'View Content' : 'Add New Content') }}</h3>
+            <button class="modal-close" (click)="closeModal()">×</button>
+          </div>
+
+          <div class="modal-body" *ngIf="!selectedContent || isEditing">
+            <!-- EDIT/CREATE MODE - Google Forms Style with Multiple Fields -->
+            <form>
+              <!-- Basic Information Section -->
+              <h4 class="form-section-title">Basic Information</h4>
+              
+              <!-- Title -->
+              <div class="form-group">
+                <label>Title <span class="required">*</span></label>
+                <input 
+                  type="text" 
+                  class="form-control" 
+                  [(ngModel)]="contentForm.title" 
+                  name="title"
+                  placeholder="Enter destination title">
+              </div>
+
+              <!-- Short Description -->
+              <div class="form-group">
+                <label>Short Description</label>
+                <textarea 
+                  class="form-control" 
+                  rows="3" 
+                  [(ngModel)]="contentForm.shortDescription" 
+                  name="shortDescription"
+                  placeholder="Brief description (appears in cards)"></textarea>
+              </div>
+
+              <!-- Full Description -->
+              <div class="form-group">
+                <label>Full Description</label>
+                <textarea 
+                  class="form-control" 
+                  rows="6" 
+                  [(ngModel)]="contentForm.fullDescription" 
+                  name="fullDescription"
+                  placeholder="Detailed description..."></textarea>
+              </div>
+
+              <!-- Location & Hours Section -->
+              <h4 class="form-section-title">Location & Hours</h4>
+
+              <!-- SECTION: Location Picker -->
+              <div class="form-section">
+                <div class="section-label-row">
+                  <label class="section-label">Location <span class="required">*</span></label>
+                  <span class="location-hint" *ngIf="contentForm.locationCoords">
+                    📍 {{ contentForm.locationCoords.lat | number:'1.4-4' }}, {{ contentForm.locationCoords.lng | number:'1.4-4' }}
+                  </span>
+                </div>
+                <p class="section-hint">Tap on the map to pin the exact destination location.</p>
+
+                <div class="map-container">
+                  <!-- Add modal uses osm-map; Edit modal uses osm-map-edit -->
+                  <div *ngIf="!isEditing" id="osm-map" class="map-inner"></div>
+                  <div *ngIf="isEditing" id="osm-map-edit" class="map-inner"></div>
+                  <div class="map-tap-hint" *ngIf="!contentForm.locationCoords">
+                    <span>👆 Tap map to pin location</span>
+                  </div>
+                </div>
+
+                <input
+                  class="form-control"
+                  style="margin-top:10px;"
+                  type="text"
+                  name="location"
+                  placeholder="Or type address / landmark..."
+                  [(ngModel)]="contentForm.location">
+              </div>
+
+              <!-- Hours of Operation -->
+              <div class="form-group">
+                <label>Hours of Operation</label>
+                <input 
+                  type="text" 
+                  class="form-control" 
+                  [(ngModel)]="contentForm.hours" 
+                  name="hours"
+                  placeholder="e.g. Open 8:00 AM - 6:00 PM daily">
+              </div>
+
+              <!-- Entrance Fee -->
+              <div class="form-group">
+                <label>Entrance Fee</label>
+                <input 
+                  type="text" 
+                  class="form-control" 
+                  [(ngModel)]="contentForm.entranceFee" 
+                  name="entranceFee"
+                  placeholder="e.g. FREE, ₱50, ₱100">
+              </div>
+
+              <!-- Contact Information Section -->
+              <h4 class="form-section-title">Contact Information</h4>
+
+              <!-- Contact Number -->
+              <div class="form-group">
+                <label>Contact Number</label>
+                <input 
+                  type="text" 
+                  class="form-control" 
+                  [(ngModel)]="contentForm.contactNumber" 
+                  name="contactNumber"
+                  placeholder="e.g. (02) 1234-5678">
+              </div>
+
+              <!-- Website -->
+              <div class="form-group">
+                <label>Website</label>
+                <input 
+                  type="url" 
+                  class="form-control" 
+                  [(ngModel)]="contentForm.website" 
+                  name="website"
+                  placeholder="e.g. www.example.com">
+              </div>
+
+              <!-- Amenities Section -->
+              <h4 class="form-section-title">Amenities & Options</h4>
+
+              <!-- Good For - Checkbox Options -->
+              <div class="form-group">
+                <label>Good For</label>
+                <div class="checkbox-grid">
+                  <div class="checkbox-item" *ngFor="let option of goodForOptions">
+                    <label>
+                      <input type="checkbox" 
+                             [checked]="contentForm.goodFor?.includes(option)"
+                             (change)="toggleGoodFor(option)">
+                      {{ option }}
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Parking - Dropdown -->
+              <div class="form-group">
+                <label>Parking</label>
+                <select class="form-control" [(ngModel)]="contentForm.parking" name="parking">
+                  <option *ngFor="let option of parkingOptions" [value]="option">{{ option }}</option>
+                </select>
+              </div>
+
+              <!-- Image Upload Section -->
+              <h4 class="form-section-title">Media</h4>
+
+              <!-- Image Upload -->
+              <div class="form-group">
+                <label>Main Image</label>
+                <div class="image-upload-area">
+                  <div class="image-preview" *ngIf="contentForm.imageUrl">
+                    <img [src]="contentForm.imageUrl" alt="Preview">
+                    <button type="button" class="remove-image" (click)="removeImage()">×</button>
+                  </div>
+                  <div class="upload-placeholder" *ngIf="!contentForm.imageUrl" (click)="fileInput.click()">
+                    <span class="upload-icon">📸</span>
+                    <span>Click to upload image</span>
+                    <span class="upload-hint">JPG, PNG or GIF (Max. 5MB)</span>
+                  </div>
+                  <input #fileInput type="file" accept="image/*" style="display: none" (change)="onImageSelected($event)">
+                </div>
+              </div>
+
+              <!-- Publishing Settings Section -->
+              <h4 class="form-section-title">Publishing Settings</h4>
+
+              <!-- Status -->
+              <div class="form-group">
+                <label>Status</label>
+                <select class="form-control" [(ngModel)]="contentForm.status" name="status">
+                  <option value="published">Published</option>
+                  <option value="draft">Draft</option>
+                </select>
+              </div>
+
+            </form>
+          </div>
+
+          <!-- VIEW MODE - Display all content fields -->
+          <div class="modal-body view-mode" *ngIf="selectedContent && !isEditing">
+            <div class="view-image">
+              <img [src]="selectedContent.imageUrl" [alt]="selectedContent.title">
+            </div>
+            
+            <div class="view-title">
+              <h2>{{ selectedContent.title }}</h2>
+              <div class="view-meta">
+                <span class="view-date">Created: {{ selectedContent.createdAt }}</span>
+                <span class="view-date">Updated: {{ selectedContent.updatedAt }}</span>
+              </div>
+            </div>
+
+            <div class="view-section">
+              <h4>Location</h4>
+              <p>📍 {{ selectedContent.location }}</p>
+              <p *ngIf="selectedContent.locationCoords" class="location-coords">
+                🗺️ {{ selectedContent.locationCoords.lat | number:'1.4-4' }}, {{ selectedContent.locationCoords.lng | number:'1.4-4' }}
+              </p>
+            </div>
+
+            <div class="view-section">
+              <h4>Short Description</h4>
+              <p>{{ selectedContent.shortDescription }}</p>
+            </div>
+
+            <div class="view-section">
+              <h4>Full Description</h4>
+              <p>{{ selectedContent.fullDescription }}</p>
+            </div>
+
+            <div class="info-grid">
+              <div class="info-item">
+                <span class="info-label">Hours</span>
+                <span class="info-value">{{ selectedContent.hours }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Entrance Fee</span>
+                <span class="info-value">{{ selectedContent.entranceFee }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Parking</span>
+                <span class="info-value">{{ selectedContent.parking }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Contact</span>
+                <span class="info-value">{{ selectedContent.contactNumber }}</span>
+              </div>
+              <div class="info-item" *ngIf="selectedContent.website">
+                <span class="info-label">Website</span>
+                <span class="info-value">{{ selectedContent.website }}</span>
+              </div>
+            </div>
+
+            <div class="view-section" *ngIf="selectedContent.goodFor?.length">
+              <h4>Good For</h4>
+              <div class="tags-container">
+                <span class="tag" *ngFor="let item of selectedContent.goodFor">{{ item }}</span>
+              </div>
+            </div>
+
+            <!-- QR CODE SECTION -->
+            <div class="qr-section">
+              <div class="qr-section-header">
+                <h4>QR Code</h4>
+                <span class="qr-hint">Tourists scan this to view destination details</span>
+              </div>
+              <div class="qr-body">
+                <div class="qr-canvas-wrap">
+                  <canvas id="qr-canvas"></canvas>
+                  <div class="qr-loading" *ngIf="!qrCodeDataUrl">
+                    <span>Generating QR...</span>
+                  </div>
+                </div>
+                <div class="qr-info">
+                  <p class="qr-dest-name">{{ selectedContent.title }}</p>
+                  <p class="qr-url">{{ selectedContent.id }}</p>
+                  <p class="qr-desc">Place this QR at the entrance or info board. When scanned, tourists are taken directly to this destination's details page.</p>
+                  <button class="btn-download-qr" (click)="downloadQr(selectedContent.title)" [disabled]="!qrCodeDataUrl">
+                    ⬇ Download QR Code
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="view-status">
+              <span class="status-badge" [class.published]="selectedContent.status === 'published'" [class.draft]="selectedContent.status === 'draft'" [class.temp-closed]="selectedContent.tempStatus === 'Temporarily Closed'">
+                {{ selectedContent.tempStatus === 'Temporarily Closed' ? 'Temporarily Closed' : (selectedContent.status === 'published' ? 'Published' : 'Draft') }}
+              </span>
+              <div class="close-reason-hint" *ngIf="selectedContent.closeReason">
+                ⚠️ {{ selectedContent.closeReason }}
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button class="btn-secondary" (click)="closeModal()">Cancel</button>
+            <button *ngIf="!selectedContent || isEditing" class="btn-primary" (click)="saveContent()" [disabled]="isLoading">
+              {{ isLoading ? 'Saving...' : 'Save Content' }}
+            </button>
+            <!-- View mode: Temp Close or Reopen -->
+            <button
+              *ngIf="selectedContent && !isEditing && selectedContent.tempStatus !== 'Temporarily Closed'"
+              class="btn-temp-close"
+              (click)="openTempCloseModal(selectedContent)">
+              🔒 Temp Close
+            </button>
+            <button
+              *ngIf="selectedContent && !isEditing && selectedContent.tempStatus === 'Temporarily Closed'"
+              class="btn-reopen"
+              (click)="reopenDestination(selectedContent)">
+              ✅ Reopen
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- DELETE CONFIRMATION MODAL -->
+      <div class="modal-overlay" *ngIf="showDeleteConfirm" (click)="cancelDelete()">
+        <div class="modal-container confirm-modal" (click)="$event.stopPropagation()">
+          <div class="modal-header">
+            <h3>Confirm Delete</h3>
+            <button class="modal-close" (click)="cancelDelete()">×</button>
+          </div>
+          <div class="modal-body">
+            <p>Are you sure you want to delete <strong>{{ selectedContent?.title }}</strong>?</p>
+            <p class="warning-text">This action cannot be undone.</p>
+          </div>
+          <div class="modal-footer">
+            <button class="btn-secondary" (click)="cancelDelete()">Cancel</button>
+            <button class="btn-delete" (click)="deleteContent()" [disabled]="isLoading">
+              {{ isLoading ? 'Deleting...' : 'Delete' }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+      <!-- TEMP CLOSE MODAL -->
+      <div class="modal-overlay" *ngIf="showTempCloseModal" (click)="onTempCloseOverlayClick($event)">
+        <div class="modal-container confirm-modal" (click)="$event.stopPropagation()">
+          <div class="modal-header">
+            <h3>⚠️ Temporarily Close Destination</h3>
+            <button class="modal-close" (click)="closeTempCloseModal()">×</button>
+          </div>
+          <div class="modal-body">
+            <p style="margin:0 0 12px;font-size:14px;color:#2c3e50;">
+              <strong>{{ tempCloseTarget?.title }}</strong> will be marked as
+              <strong>Temporarily Closed</strong> and the reason will be shown on the card.
+            </p>
+            <div class="form-group">
+              <label>Reason for Closure <span class="required">*</span></label>
+              <textarea
+                class="form-control"
+                rows="3"
+                placeholder="e.g. Renovation, Weather conditions, Safety inspection..."
+                [(ngModel)]="tempCloseReason"
+                name="tempCloseReason">
+              </textarea>
+            </div>
+            <div class="close-warning">
+              ⚠️ This action can be undone by clicking <strong>Reopen</strong> on the destination.
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn-secondary" (click)="closeTempCloseModal()">Cancel</button>
+            <button class="btn-delete" (click)="confirmTempClose()" [disabled]="!tempCloseReason.trim() || isLoading">
+              {{ isLoading ? 'Closing...' : '🔒 Confirm Close' }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+</ion-content>

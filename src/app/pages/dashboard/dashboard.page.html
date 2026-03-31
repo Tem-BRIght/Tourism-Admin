@@ -1,0 +1,297 @@
+<ion-content>
+  <div class="app-wrapper">
+
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <h3>Tourism Admin</h3>
+      </div>
+
+      <ul class="sidebar-menu">
+        <li><a (click)="navigateTo('dashboard')" class="active">Dashboard</a></li>
+        <li><a (click)="navigateTo('bookings')">Tour Guide Bookings</a></li>
+        <li><a (click)="navigateTo('feedback')">Feedback & Ratings</a></li>
+        <li><a (click)="navigateTo('monitoring')">Monitor Real-Time Activity</a></li>
+        <li><a (click)="navigateTo('number-of-tourist')">Number of Tourist / Tours</a></li>
+        <li><a (click)="navigateTo('destinations')">Destinations</a></li>
+        <li class="sidebar-section-label">Manage Accounts</li>
+        <li>
+        <li><a (click)="navigateTo('tour-guides')">Tour Guides</a></li>
+        <li><a (click)="navigateTo('users')">Users</a></li>
+        <li class="logout"><a (click)="logout()">Logout</a></li>
+      </ul>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div class="main-content">
+      <div class="top-bar">
+        <h2>Dashboard</h2>
+        <span class="badge">{{ userEmail || 'Admin' }}</span>
+      </div>
+
+      <!-- STATS CARDS -->
+      <div class="stats-grid">
+
+        <!-- Total Tourists — now driven by the peak-hour slot total -->
+        <div class="stat-card">
+          <div class="stat-icon blue">👥</div>
+          <div class="stat-details">
+            <span class="stat-label">Total Tourists</span>
+            <span class="stat-number">{{ totalTourists | number }}</span>
+            <span class="stat-change positive">{{ touristsGrowth }}</span>
+          </div>
+        </div>
+
+        <!-- Active Tour Guides -->
+        <div class="stat-card">
+          <div class="stat-icon green">🎯</div>
+          <div class="stat-details">
+            <span class="stat-label">Active Tour Guides</span>
+            <span class="stat-number">{{ activeTourGuides | number }}</span>
+            <span class="stat-change positive">{{ guidesGrowth }}</span>
+          </div>
+        </div>
+
+        <!-- Total Bookings -->
+        <div class="stat-card">
+          <div class="stat-icon purple">📋</div>
+          <div class="stat-details">
+            <span class="stat-label">Total Bookings</span>
+            <span class="stat-number">{{ totalBookings | number }}</span>
+            <span class="stat-change positive">{{ bookingsGrowth }}</span>
+          </div>
+        </div>
+
+        <!-- Most Visited -->
+        <div class="stat-card">
+          <div class="stat-icon orange">📍</div>
+          <div class="stat-details">
+            <span class="stat-label">Most Visited</span>
+            <span class="stat-number">{{ mostVisitedLocation || 'N/A' }}</span>
+            <span class="stat-sub">{{ mostVisitedCount | number }} today</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- DASHBOARD GRID -->
+      <div class="dashboard-grid">
+
+        <!-- Real-Time Monitoring -->
+        <div class="card wide">
+          <div class="card-header">
+            <h4>Real-Time Monitoring</h4>
+            <span class="live-badge">● LIVE</span>
+          </div>
+          <div class="map-placeholder">
+            <div id="dashboard-map" class="map-inner"></div>
+          </div>
+          <ul class="activity-list">
+            <li *ngFor="let spot of monitoringSpots" class="activity-item">
+              <span class="activity-dot blue"></span>
+              <span>{{ spot.count | number }} tourists at <strong>{{ spot.label }}</strong></span>
+            </li>
+            <li *ngIf="monitoringSpots.length === 0" class="activity-item">
+              No live data available.
+            </li>
+          </ul>
+        </div>
+
+        <!-- Tourist Satisfaction -->
+        <div class="card">
+          <div class="card-header">
+            <h4>Tourist Satisfaction</h4>
+          </div>
+          <div class="progress-container">
+            <div class="progress-track">
+              <div class="progress-bar" [style.width.%]="satisfactionPercent"></div>
+            </div>
+            <span class="progress-value">{{ satisfactionPercent }}%</span>
+          </div>
+          <div
+            class="pie-chart-placeholder"
+            [style.background]="'conic-gradient(#3498db 0deg ' + (satisfactionPercent * 3.6) + 'deg, #e0e0e0 ' + (satisfactionPercent * 3.6) + 'deg 360deg)'"
+          ></div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════════════
+             PEAK HOURS — click any slot to see which destinations are busy
+             ═══════════════════════════════════════════════════════════════ -->
+        <div class="card peak-hours-card">
+          <div class="card-header">
+            <h4>Peak Hours</h4>
+            <span class="hint-label">Tap a slot to see destinations</span>
+          </div>
+
+          <div class="peak-hours-graph">
+            <div class="graph-container">
+              <div
+                class="bar-container"
+                *ngFor="let slot of peakHours"
+                [class.expanded]="slot.expanded"
+                (click)="togglePeakHour(slot)"
+              >
+                <!-- Hour label + crowd badge -->
+                <div class="bar-label-group">
+                  <span class="bar-label">{{ slot.hour }}</span>
+                  <span class="crowd-badge" [attr.data-level]="slot.crowdLevel">
+                    {{ slot.crowdLevel === 'mob' ? '🚨 MOB' :
+                       slot.crowdLevel === 'high' ? '🔴 High' :
+                       slot.crowdLevel === 'moderate' ? '🟡 Mod' : '🟢 Low' }}
+                  </span>
+                </div>
+
+                <!-- Horizontal bar -->
+                <div class="bar-wrapper">
+                  <div
+                    class="bar"
+                    [class.bar--mob]="slot.crowdLevel === 'mob'"
+                    [class.bar--high]="slot.crowdLevel === 'high'"
+                    [class.bar--moderate]="slot.crowdLevel === 'moderate'"
+                    [style.width.%]="(slot.value / peakMax) * 100"
+                  >
+                    <span class="bar-value">{{ slot.value | number }}</span>
+                  </div>
+                </div>
+
+                <!-- Expand icon -->
+                <span class="expand-icon">{{ slot.expanded ? '▲' : '▼' }}</span>
+
+                <!-- ── Destination breakdown panel (accordion) ── -->
+                <div class="destination-breakdown" *ngIf="slot.expanded">
+                  <p class="breakdown-title">
+                    Destinations at {{ slot.hour }}
+                    <span *ngIf="slot.crowdLevel === 'mob'" class="mob-alert">
+                      ⚠️ Crowd warning — consider redirecting tourists
+                    </span>
+                  </p>
+                  <ul class="breakdown-list">
+                    <li
+                      *ngFor="let dest of slot.destinations"
+                      class="breakdown-item"
+                      [attr.data-level]="dest.crowdLevel"
+                    >
+                      <span class="dest-name">{{ dest.name }}</span>
+                      <span class="dest-tourists">{{ dest.tourists | number }} tourists</span>
+                      <span class="dest-level-badge" [attr.data-level]="dest.crowdLevel">
+                        {{ dest.crowdLevel === 'mob'      ? '🚨 Mob'      :
+                           dest.crowdLevel === 'high'     ? '🔴 High'     :
+                           dest.crowdLevel === 'moderate' ? '🟡 Moderate' : '🟢 Low' }}
+                      </span>
+                    </li>
+                    <li *ngIf="slot.destinations.length === 0" class="breakdown-empty">
+                      No destination data for this slot.
+                    </li>
+                  </ul>
+                </div>
+
+              </div><!-- /.bar-container -->
+            </div><!-- /.graph-container -->
+
+            <div class="graph-footer">
+              <span class="peak-indicator">
+                Peak: {{ peakHours[2]?.hour }} – {{ peakHours[3]?.hour }}
+                ({{ peakHours[2]?.value | number }} tourists)
+              </span>
+            </div>
+          </div>
+        </div>
+        <!-- /Peak Hours -->
+
+        <!-- Visitor Growth Over Time -->
+        <div class="card wide visitor-growth-card">
+          <div class="card-header">
+            <h4>Visitor Growth Over Time</h4>
+            <!-- Overall period trend badge -->
+            <span
+              *ngIf="visitorGrowthTrend"
+              class="growth-trend-badge"
+              [class.positive]="visitorGrowthTrendPositive"
+              [class.negative]="!visitorGrowthTrendPositive"
+            >
+              {{ visitorGrowthTrendPositive ? '▲' : '▼' }} {{ visitorGrowthTrend }}
+            </span>
+          </div>
+
+          <div class="growth-chart">
+            <!-- Y-axis guide lines (decorative) -->
+            <div class="y-axis">
+              <span class="y-tick">High</span>
+              <span class="y-tick">Mid</span>
+              <span class="y-tick">Low</span>
+            </div>
+
+            <!-- Bars -->
+            <div class="growth-bars">
+              <div
+                class="growth-bar-col"
+                *ngFor="let bar of visitorGrowthBars"
+                (mouseenter)="showGrowthTooltip(bar)"
+                (mouseleave)="hideGrowthTooltip(bar)"
+              >
+                <!-- Month-over-month change label above bar -->
+                <span
+                  class="mom-label"
+                  [class.positive]="bar.positive"
+                  [class.negative]="!bar.positive"
+                  [class.first]="bar.changeLabel === '—'"
+                >{{ bar.changeLabel }}</span>
+
+                <!-- The bar itself -->
+                <div
+                  class="growth-bar"
+                  [style.height.px]="bar.heightPx"
+                  [class.growth-bar--peak]="bar.heightPx === 150"
+                ></div>
+
+                <!-- Hover tooltip -->
+                <div class="growth-tooltip" *ngIf="bar.tooltipVisible">
+                  <strong>{{ bar.month }}</strong>
+                  <span>{{ bar.count | number }} visitors</span>
+                  <span
+                    [class.positive]="bar.positive"
+                    [class.negative]="!bar.positive"
+                  >{{ bar.changeLabel }} vs prev month</span>
+                </div>
+
+                <!-- Month label below bar -->
+                <span class="month-label">{{ bar.month }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Footer: highest and lowest month -->
+          <div class="growth-footer">
+            <span class="growth-stat">
+              📈 Best month: <strong>{{ growthBestMonth }}</strong>
+            </span>
+            <span class="growth-stat">
+              📉 Lowest month: <strong>{{ growthLowestMonth }}</strong>
+            </span>
+          </div>
+        </div>
+
+        <!-- Popular Destinations -->
+        <div class="card">
+          <div class="card-header">
+            <h4>Popular Destinations</h4>
+          </div>
+          <ul class="destination-list">
+            <li *ngFor="let dest of popularDestinations">
+              <span>{{ dest.name }}</span>
+              <span
+                class="trend"
+                [class.positive]="dest.positive"
+                [class.negative]="!dest.positive"
+              >{{ dest.growth }}</span>
+            </li>
+            <li *ngIf="popularDestinations.length === 0">
+              No destinations available.
+            </li>
+          </ul>
+        </div>
+
+      </div><!-- /.dashboard-grid -->
+    </div><!-- /.main-content -->
+  </div><!-- /.app-wrapper -->
+</ion-content>

@@ -1,0 +1,159 @@
+<ion-content>
+  <div class="app-wrapper">
+    
+    <!-- SIDEBAR - Same style as tour guide -->
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <h3>Tourism Admin</h3>
+      </div>
+      
+      <ul class="sidebar-menu">
+        <li><a (click)="navigateTo('dashboard')">Dashboard</a></li>
+        <li><a (click)="navigateTo('bookings')">Tour Guide Bookings</a></li>
+        <li><a (click)="navigateTo('feedback')">Feedback & Ratings</a></li>
+        <li><a (click)="navigateTo('monitoring')">Monitor Real-Time Activity</a></li>
+        <li><a (click)="navigateTo('number-of-tourist')" class="active">Number of Tourist / Tours</a></li>
+        <li><a (click)="navigateTo('destinations')">Destinations</a></li>
+        <li class="sidebar-section-label">Manage Accounts</li>
+        <li>
+        <li><a (click)="navigateTo('tour-guides')">Tour Guides</a></li>
+        <li><a (click)="navigateTo('users')">Users</a></li>
+        <li class="logout"><a (click)="logout()">Logout</a></li>
+      </ul>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div class="main-content">
+      <div class="top-bar">
+        <h2>Tourist & Tour Analytics</h2>
+        <div class="top-bar-actions">
+          <button class="btn-secondary" (click)="changePeriod('weekly')" [class.active]="selectedPeriod === 'weekly'">Week</button>
+          <button class="btn-secondary" (click)="changePeriod('monthly')" [class.active]="selectedPeriod === 'monthly'">Month</button>
+          <button class="btn-secondary" (click)="changePeriod('yearly')" [class.active]="selectedPeriod === 'yearly'">Year</button>
+          <button class="btn-primary" (click)="toggleExportOptions()">Export</button>
+          <div class="export-dropdown" *ngIf="showExportOptions">
+            <div class="dropdown-item" (click)="exportData('pdf')">PDF</div>
+            <div class="dropdown-item" (click)="exportData('excel')">Excel</div>
+            <div class="dropdown-item" (click)="exportData('csv')">CSV</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STATS CARDS - Same style as tour guide, removed active tours -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon blue">👥</div>
+          <div class="stat-details">
+            <span class="stat-label">Total Tourists Today</span>
+            <span class="stat-number">{{ totalTouristsToday }}</span>
+            <span class="stat-change positive">+{{ totalTouristsChange }}%</span>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon purple">📈</div>
+          <div class="stat-details">
+            <span class="stat-label">Monthly Growth</span>
+            <span class="stat-number">{{ monthlyGrowth }}%</span>
+            <span class="stat-change positive">+{{ monthlyGrowthChange }}%</span>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon orange">🏆</div>
+          <div class="stat-details">
+            <span class="stat-label">Most Popular</span>
+            <span class="stat-number">{{ mostPopular }}</span>
+            <span class="stat-sub">{{ mostPopularCount }} visitors</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- CHARTS GRID - Same layout as before but without peak hours -->
+      <div class="charts-grid">
+        <!-- Monthly Trend Chart - Full width -->
+        <div class="card wide">
+          <div class="card-header">
+            <h4>Monthly Tourist & Tour Trends</h4>
+            <select class="year-select" [(ngModel)]="selectedYear" (change)="changeYear(selectedYear)">
+              <option value="2024">2024</option>
+              <option value="2023">2023</option>
+              <option value="2022">2022</option>
+            </select>
+          </div>
+          <div class="chart-container">
+            <div class="bar-chart">
+              <div class="chart-bars">
+                <div class="bar-group" *ngFor="let data of monthlyData">
+                  <div class="bar tourist-bar" [style.height]="(data.tourists / 3000 * 150) + 'px'">
+                    <span class="bar-value">{{ data.tourists }}</span>
+                  </div>
+                  <div class="bar tour-bar" [style.height]="(data.tours / 100 * 150) + 'px'">
+                    <span class="bar-value">{{ data.tours }}</span>
+                  </div>
+                </div>
+              </div>
+              <div class="chart-labels">
+                <span *ngFor="let data of monthlyData">{{ data.month }}</span>
+              </div>
+            </div>
+            <div class="chart-legend">
+              <span><span class="legend-dot tourist"></span> Tourists</span>
+              <span><span class="legend-dot tour"></span> Tours</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Top Destinations - Same style as tour guide tables -->
+        <div class="card">
+          <div class="card-header">
+            <h4>Top Destinations</h4>
+            <span class="badge-info">{{ topDestinations.length }} locations</span>
+          </div>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Destination</th>
+                  <th class="text-center">Tourists</th>
+                  <th class="text-center">Tours</th>
+                  <th class="text-center">Growth</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let dest of topDestinations">
+                  <td>{{ dest.name }}</td>
+                  <td class="text-center">{{ dest.tourists }}</td>
+                  <td class="text-center">{{ dest.tours }}</td>
+                  <td class="text-center">
+                    <span class="trend-badge" 
+                          [class.positive]="dest.trend === 'up'"
+                          [class.negative]="dest.trend === 'down'"
+                          [class.stable]="dest.trend === 'stable'">
+                      {{ dest.growth }}
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Quick Stats - Same style as tour guide stats cards -->
+        <div class="card">
+          <div class="card-header">
+            <h4>Quick Stats</h4>
+          </div>
+          <div class="quick-stats-grid">
+            <div class="quick-stat-item" *ngFor="let stat of quickStats">
+              <div class="quick-stat-icon">{{ stat.icon }}</div>
+              <div class="quick-stat-details">
+                <span class="quick-stat-label">{{ stat.label }}</span>
+                <span class="quick-stat-value">{{ stat.value }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div> 
+  </div> 
+</ion-content>

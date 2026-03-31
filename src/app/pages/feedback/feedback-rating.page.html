@@ -1,0 +1,300 @@
+<ion-content>
+  <div class="app-wrapper">
+
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <h3>Tourism Admin</h3>
+      </div>
+      <ul class="sidebar-menu">
+        <li><a (click)="navigateTo('dashboard')">Dashboard</a></li>
+        <li><a (click)="navigateTo('bookings')">Tour Guide Bookings</a></li>
+        <li><a (click)="navigateTo('feedback')" class="active">Feedback & Ratings</a></li>
+        <li><a (click)="navigateTo('monitoring')">Monitor Real-Time Activity</a></li>
+        <li><a (click)="navigateTo('number-of-tourist')">Number of Tourist / Tours</a></li>
+        <li><a (click)="navigateTo('destinations')">Destinations</a></li>
+        <li class="sidebar-section-label">Manage Accounts</li>
+        <li><a (click)="navigateTo('tour-guides')">Tour Guides</a></li>
+        <li><a (click)="navigateTo('users')">Users</a></li>
+        <li class="logout"><a (click)="logout()">Logout</a></li>
+      </ul>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div class="main-content">
+
+      <div class="top-bar">
+        <h2>Feedback & Ratings</h2>
+        <button class="btn-export" (click)="exportData()">Export CSV</button>
+      </div>
+
+      <!-- Loading / error banner -->
+      <div *ngIf="isFetching" class="loading-banner">⏳ Loading reviews from app…</div>
+      <div *ngIf="errorMessage" class="error-banner">⚠️ {{ errorMessage }}</div>
+
+      <!-- SUMMARY CARDS -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon rating">⭐</div>
+          <div class="stat-details">
+            <span class="stat-label">Overall Rating</span>
+            <span class="stat-number">{{ overallRating }}</span>
+            <span class="stat-sub">{{ totalReviews }} reviews</span>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon top">🏆</div>
+          <div class="stat-details">
+            <span class="stat-label">Top Rated</span>
+            <span class="stat-number">{{ topRatedDestination }}</span>
+            <span class="stat-sub">{{ topRatedScore }} ⭐</span>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon reviewed">📊</div>
+          <div class="stat-details">
+            <span class="stat-label">Most Reviewed</span>
+            <span class="stat-number">{{ mostReviewedSpot }}</span>
+            <span class="stat-sub">{{ mostReviewedCount }} reviews</span>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon satisfaction">📈</div>
+          <div class="stat-details">
+            <span class="stat-label">Satisfaction</span>
+            <span class="stat-number">{{ satisfactionRate }}%</span>
+            <span class="stat-sub positive">4–5 ⭐ reviews</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- FILTERS -->
+      <div class="filters-card">
+        <h4>Filter Reviews</h4>
+        <div class="filters-grid">
+          <div class="filter-group">
+            <label>Destination</label>
+            <input
+              class="filter-input"
+              type="text"
+              placeholder="Search destination…"
+              [(ngModel)]="filterDestination"
+              (ngModelChange)="applyFilters()"
+            />
+          </div>
+          <div class="filter-group">
+            <label>Minimum Rating</label>
+            <select class="filter-input" [(ngModel)]="filterRating" (ngModelChange)="applyFilters()">
+              <option value="">All ratings</option>
+              <option value="5">5 ⭐ only</option>
+              <option value="4">4 ⭐ and above</option>
+              <option value="3">3 ⭐ and above</option>
+              <option value="2">2 ⭐ and above</option>
+              <option value="1">1 ⭐ and above</option>
+            </select>
+          </div>
+          <div class="filter-actions">
+            <button class="btn-reset" (click)="resetFilters()">Reset Filters</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- POPULAR SPOTS -->
+      <div class="card">
+        <div class="card-header">
+          <h4>Popular Tourist Spots</h4>
+          <span class="badge-info">{{ popularSpots.length }} destinations</span>
+        </div>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Rank</th>
+                <th>Destination</th>
+                <th>Rating</th>
+                <th>Reviews</th>
+                <th>Satisfaction</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let spot of popularSpots">
+                <td><span class="rank">#{{ spot.rank }}</span></td>
+                <td>{{ spot.name }}</td>
+                <td>
+                  <span class="rating-stars">
+                    <span class="stars">⭐</span> {{ spot.rating }}
+                  </span>
+                </td>
+                <td>{{ spot.reviews }}</td>
+                <td><span class="badge-success">{{ spot.satisfaction }}%</span></td>
+              </tr>
+              <tr *ngIf="popularSpots.length === 0 && !isFetching">
+                <td colspan="5" style="text-align:center; color:#95a5a6; padding: 24px;">
+                  No review data yet.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- FEEDBACK TABLE -->
+      <div class="card">
+        <div class="card-header">
+          <h4>Recent Feedback</h4>
+          <span class="badge-info">{{ totalItems }} feedback entries</span>
+        </div>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Tourist</th>
+                <th>Destination</th>
+                <th>Rating</th>
+                <th>Feel</th>
+                <th>Date</th>
+                <th class="text-center">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let review of paginatedReviews">
+                <td>{{ review.name }}</td>
+                <td>{{ review.destination }}</td>
+                <td>
+                  <span class="rating-stars">
+                    <span class="stars">⭐</span> {{ review.rating }}
+                  </span>
+                </td>
+                <td class="feel-cell">{{ review.feeling || '—' }}</td>
+                <td>{{ review.date }}</td>
+                <td class="text-center">
+                  <button class="action-link view" (click)="viewFeedback(review)">View</button>
+                  <span *ngIf="canDeleteFeedback" class="action-separator">|</span>
+                  <button *ngIf="canDeleteFeedback" class="action-link delete" (click)="deleteFeedback(review.id)">Delete</button>
+                </td>
+              </tr>
+              <tr *ngIf="paginatedReviews.length === 0 && !isFetching">
+                <td colspan="6" style="text-align:center; color:#95a5a6; padding: 24px;">
+                  No reviews found.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- PAGINATION -->
+      <div class="pagination" *ngIf="totalItems > itemsPerPage">
+        <span class="pagination-info">
+          Showing {{ (currentPage-1)*itemsPerPage + 1 }} –
+          {{ currentPage*itemsPerPage > totalItems ? totalItems : currentPage*itemsPerPage }}
+          of {{ totalItems }}
+        </span>
+        <div class="pagination-controls">
+          <button class="page-btn" (click)="previousPage()" [disabled]="currentPage === 1">‹ Prev</button>
+          <button
+            class="page-btn"
+            *ngFor="let page of getPageArray()"
+            (click)="changePage(page)"
+            [class.active]="currentPage === page"
+          >{{ page }}</button>
+          <button class="page-btn" (click)="nextPage()" [disabled]="currentPage === totalPages">Next ›</button>
+        </div>
+      </div>
+
+      <!-- VIEW FEEDBACK MODAL -->
+      <div class="modal-overlay" *ngIf="showFeedbackModal" (click)="closeModal()">
+        <div class="modal-container feedback-modal" (click)="$event.stopPropagation()">
+          <div class="modal-header">
+            <h3>Feedback Details</h3>
+            <button class="modal-close" (click)="closeModal()">×</button>
+          </div>
+
+          <div class="modal-body" *ngIf="selectedFeedback">
+
+            <!-- Destination banner -->
+            <div class="destination-image">
+              <div class="image-placeholder">
+                <span class="image-icon">📍</span>
+                <span>{{ selectedFeedback.destination }}</span>
+              </div>
+            </div>
+
+            <!-- Rating -->
+            <div class="rating-display">
+              <div class="rating-label">Rating</div>
+              <div class="rating-stars-large">
+                <span *ngFor="let s of [1,2,3,4,5]" class="star"
+                      [class.inactive]="s > selectedFeedback.rating">⭐</span>
+                <span class="rating-value">{{ selectedFeedback.rating }}/5</span>
+              </div>
+            </div>
+
+            <!-- Feeling (title) -->
+            <div *ngIf="selectedFeedback.feeling" class="comment-section">
+              <div class="comment-label">Summary</div>
+              <div class="comment-box feel-display">{{ selectedFeedback.feeling }}</div>
+            </div>
+
+            <!-- Full review text -->
+            <div *ngIf="selectedFeedback.comment" class="comment-section">
+              <div class="comment-label">Full Review</div>
+              <div class="comment-box">"{{ selectedFeedback.comment }}"</div>
+            </div>
+
+            <!-- Photos -->
+            <div *ngIf="selectedFeedback.photos && selectedFeedback.photos.length > 0" class="photos-section">
+              <div class="comment-label">Photos ({{ selectedFeedback.photos.length }})</div>
+              <div class="photos-grid">
+                <img
+                  *ngFor="let photo of selectedFeedback.photos"
+                  [src]="photo"
+                  class="review-photo"
+                  alt="Review photo"
+                />
+              </div>
+            </div>
+
+            <!-- Metadata -->
+            <div class="metadata">
+              <div class="metadata-item">
+                <span class="metadata-label">Tourist:</span>
+                <span class="metadata-value">{{ selectedFeedback.name }}</span>
+              </div>
+              <div class="metadata-item">
+                <span class="metadata-label">Destination:</span>
+                <span class="metadata-value">{{ selectedFeedback.destination }}</span>
+              </div>
+              <div class="metadata-item" *ngIf="selectedFeedback.visitDate">
+                <span class="metadata-label">Visited:</span>
+                <span class="metadata-value">{{ selectedFeedback.visitDate }}</span>
+              </div>
+              <div class="metadata-item" *ngIf="selectedFeedback.companion">
+                <span class="metadata-label">Went with:</span>
+                <span class="metadata-value">{{ selectedFeedback.companion }}</span>
+              </div>
+              <div class="metadata-item" *ngIf="selectedFeedback.duration">
+                <span class="metadata-label">Duration:</span>
+                <span class="metadata-value">{{ selectedFeedback.duration }}</span>
+              </div>
+              <div class="metadata-item">
+                <span class="metadata-label">Submitted:</span>
+                <span class="metadata-value">{{ selectedFeedback.date }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button class="btn-close" (click)="closeModal()">Close</button>
+            <button
+              *ngIf="canDeleteFeedback && selectedFeedback"
+              class="btn-delete"
+              (click)="deleteFeedback(selectedFeedback.id)"
+            >Delete</button>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /main-content -->
+  </div><!-- /app-wrapper -->
+</ion-content>

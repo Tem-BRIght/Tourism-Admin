@@ -1,0 +1,170 @@
+<ion-content>
+  <div class="app-wrapper">
+    
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <h3>Tourism Admin</h3>
+      </div>
+      
+      <ul class="sidebar-menu">
+        <li><a (click)="navigateTo('dashboard')">Dashboard</a></li>
+        <li><a (click)="navigateTo('bookings')">Tour Guide Bookings</a></li>
+        <li><a (click)="navigateTo('feedback')">Feedback & Ratings</a></li>
+        <li><a (click)="navigateTo('monitoring')" class="active">Monitor Real-Time Activity</a></li>
+        <li><a (click)="navigateTo('number-of-tourist')">Number of Tourist / Tours</a></li>
+        <li><a (click)="navigateTo('destinations')">Destinations</a></li>
+        <li class="sidebar-section-label">Manage Accounts</li>
+        <li>
+        <li><a (click)="navigateTo('tour-guides')">Tour Guides</a></li>
+        <li><a (click)="navigateTo('users')">Users</a></li>
+        <li class="logout"><a (click)="logout()">Logout</a></li>
+      </ul>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div class="main-content">
+      <div class="top-bar">
+        <h2>Real-Time Activity Monitor</h2>
+        <div class="top-bar-actions">
+          <button class="btn-date">
+            Jan 15, 2024
+          </button>
+          <button class="btn-primary" (click)="generateReport()" [disabled]="isLoading">
+            {{ isLoading ? 'Generating...' : 'Generate Excel Report' }}
+          </button>
+        </div>
+      </div>
+
+      <!-- STATS CARDS -->
+      <div class="stats-grid">
+        <div class="stat-card" *ngFor="let stat of stats">
+          <div class="stat-icon">{{ stat.icon }}</div>
+          <div>
+            <p>{{ stat.label }}</p>
+            <h3>{{ stat.value }}</h3>
+            <small class="positive">{{ stat.change }}</small>
+          </div>
+        </div>
+      </div>
+
+      <!-- MAIN GRID - System Activity removed -->
+      <div class="monitor-grid">
+        <!-- Current Tours -->
+        <div class="card">
+          <h4>Current Tours</h4>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Tour Guide</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let tour of currentTours">
+                  <td><span class="tour-id">{{ tour.id }}</span></td>
+                  <td>{{ tour.guide }}</td>
+                  <td>
+                    <span class="status-badge" 
+                          [class.active]="tour.status === 'Active'"
+                          [class.completed]="tour.status === 'Completed'">
+                      {{ tour.status }}
+                    </span>
+                  </td>
+                  <td>
+                    <button class="action-btn view" (click)="viewTourDetails(tour)">View</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Live Activity Feed -->
+        <div class="card">
+          <h4>Live Activity Feed</h4>
+          <div class="feed-list">
+            <div class="feed-item" *ngFor="let activity of activities">
+              <div class="feed-icon">{{ activity.icon }}</div>
+              <div>
+                <strong>{{ activity.title }}</strong>
+                <p>{{ activity.time }}</p>
+              </div>
+              <span class="badge">{{ activity.type }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- This card is intentionally left empty to maintain grid balance -->
+        <div class="card empty-card">
+          <!-- Empty card to maintain 2x2 grid layout -->
+        </div>
+      </div>
+
+      <!-- TOURIST INFORMATION MODAL -->
+      <div class="modal-overlay" *ngIf="showTouristModal" (click)="closeModal()">
+        <div class="modal-container tourist-modal" (click)="$event.stopPropagation()">
+          <div class="modal-header">
+            <h3>Tourist Information</h3>
+            <button class="modal-close" (click)="closeModal()">×</button>
+          </div>
+
+          <div class="modal-body" *ngIf="selectedTour">
+            <!-- Tour Summary -->
+            <div class="tour-summary">
+              <div class="summary-item">
+                <span class="summary-label">Tour ID:</span>
+                <span class="summary-value">{{ selectedTour.id }}</span>
+              </div>
+              <div class="summary-item">
+                <span class="summary-label">Destination:</span>
+                <span class="summary-value">{{ selectedTour.destination }}</span>
+              </div>
+              <div class="summary-item">
+                <span class="summary-label">Tour Guide:</span>
+                <span class="summary-value">{{ selectedTour.guide }}</span>
+              </div>
+              <div class="summary-item">
+                <span class="summary-label">Status:</span>
+                <span class="status-badge-small" 
+                      [class.active]="selectedTour.status === 'Active'"
+                      [class.completed]="selectedTour.status === 'Completed'">
+                  {{ selectedTour.status }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Tourist List -->
+            <div class="tourist-list-section">
+              <h4>Tourists ({{ selectedTour.tourists.length }} people)</h4>
+              <table class="tourist-table">
+                <thead>
+                  <tr>
+                    <th style="width: 50px">#</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let tourist of selectedTour.tourists; let i = index">
+                    <td>{{ i + 1 }}</td>
+                    <td>{{ tourist.name }}</td>
+                    <td>{{ tourist.email }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button class="btn-close" (click)="closeModal()">Close</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</ion-content>

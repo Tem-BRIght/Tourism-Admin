@@ -1,0 +1,146 @@
+ion-content {
+  --background: linear-gradient(
+    to bottom right,
+    #edf5ff,
+    #4a97f5
+  );
+}
+
+/* MAIN LAYOUT */
+.container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 100%;
+  margin: auto 0;
+  padding: 3rem;
+}
+
+/* LOGIN CARD */
+.login-card {
+  width: 650px;
+  background: #ffffff;
+  padding: 2rem;
+  border-radius: 14px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  margin: auto;
+}
+
+.title {
+  text-align: center;
+  font-weight: 700;
+  margin-bottom: 5px;
+  color: #333;
+  font-size: 28px;
+}
+
+.subtitle {
+  text-align: center;
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 1.5rem;
+}
+
+ion-item {
+  margin-bottom: 14px;
+  --background: transparent;
+  --border-color: transparent;
+  --highlight-height: 0;
+  --padding-start: 0;
+  --inner-padding-end: 0;
+}
+
+ion-label {
+  color: #333 !important;
+  font-weight: 500 !important;
+  margin-bottom: 5px !important;
+}
+
+ion-input {
+  --background: #f5f5f5;
+  --padding-start: 15px;
+  --padding-end: 15px;
+  --padding-top: 12px;
+  --padding-bottom: 12px;
+  border-radius: 8px;
+  margin-top: 5px;
+}
+
+.options {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  margin: 10px 0;
+}
+
+.remember {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.remember span {
+  color: #666;
+}
+
+.forgot {
+  color: #2f80ff;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.login-btn {
+  margin-top: 1rem;
+  --background: #2f80ff;
+  --border-radius: 10px;
+  height: 44px;
+  --box-shadow: none;
+  font-weight: 500;
+}
+
+/* Toggle between login / register */
+.toggle-link {
+  text-align: center;
+  font-size: 12px;
+  color: #666;
+  margin-top: 0.75rem;
+
+  a {
+    color: #2f80ff;
+    cursor: pointer;
+    font-weight: 500;
+    margin-left: 4px;
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
+.secured {
+  text-align: center;
+  font-size: 11px;
+  color: #888;
+  margin-top: 1rem;
+}
+
+/* BRANDING */
+.branding {
+  max-width: 739px;
+  max-height: 391px;
+  color: #0c2c5a;
+  margin: auto;
+}
+
+.branding img {
+  max-width: 100%;
+  height: auto;
+}
+
+.discover {
+  font-size: 13px;
+  letter-spacing: 1px;
+  color: #000;
+}

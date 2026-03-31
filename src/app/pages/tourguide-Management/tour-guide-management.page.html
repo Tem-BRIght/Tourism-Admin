@@ -1,0 +1,188 @@
+<ion-content>
+  <div class="app-wrapper">
+
+    <!-- ══ SIDEBAR ══════════════════════════════════════════════════════════ -->
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <h3>Tourism Admin</h3>
+      </div>
+      <ul class="sidebar-menu">
+        <li><a (click)="navigateTo('dashboard')">Dashboard</a></li>
+        <li><a (click)="navigateTo('bookings')">Tour Guide Bookings</a></li>
+        <li><a (click)="navigateTo('feedback')">Feedback &amp; Ratings</a></li>
+        <li><a (click)="navigateTo('monitoring')">Monitor Real-Time Activity</a></li>
+        <li><a (click)="navigateTo('number-of-tourist')">Number of Tourist / Tours</a></li>
+        <li><a (click)="navigateTo('destinations')">Destinations</a></li>
+        <li class="sidebar-section-label">Manage Accounts</li>
+        <li><a (click)="navigateTo('tour-guides')" class="active">Tour Guides</a></li>
+        <li><a (click)="navigateTo('users')">Users</a></li>
+        <li class="logout"><a (click)="logout()">Logout</a></li>
+      </ul>
+    </div>
+
+    <!-- ══ MAIN CONTENT ═════════════════════════════════════════════════════ -->
+    <div class="main-content">
+      <div class="top-bar">
+        <h2>Tour Guides</h2>
+        <button class="btn-primary" (click)="openAddGuideModal()">+ Add Tour Guide</button>
+      </div>
+
+      <!-- Error banner -->
+      <div class="error-banner" *ngIf="errorMessage">
+        ⚠️ {{ errorMessage }}
+        <button class="modal-close" (click)="errorMessage = ''">×</button>
+      </div>
+
+      <!-- Guides table -->
+      <div class="card" *ngIf="!isFetching && guides.length > 0">
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Status</th>
+                <th>Created</th>
+                <th class="text-center">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let guide of guides">
+                <td><strong>{{ guide.name }}</strong></td>
+                <td>{{ guide.email }}</td>
+                <td>{{ guide.phone }}</td>
+                <td>
+                  <span class="status-badge" [class.active]="guide.status === 'active'">
+                    {{ guide.status === 'active' ? 'Active' : 'Inactive' }}
+                  </span>
+                </td>
+                <td>{{ guide.createdAt }}</td>
+                <td class="text-center actions-cell">
+                  <button class="action-link assign"   (click)="openAssignModal(guide)">Assign Dest.</button>
+                  <span class="action-separator">|</span>
+                  <button class="action-link edit"     (click)="openEditGuideModal(guide)">Edit</button>
+                  <span class="action-separator">|</span>
+                  <button class="action-link delete"   (click)="deleteGuide(guide)">Delete</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div *ngIf="isFetching" class="no-results">Loading tour guides…</div>
+      <div *ngIf="!isFetching && guides.length === 0" class="no-results">
+        No tour guides found. Click "Add Tour Guide" to get started.
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════════════════════════════════════
+       MODAL 1 — ADD / EDIT GUIDE
+       ══════════════════════════════════════════════════════════════════════ -->
+  <div class="modal-overlay" *ngIf="showGuideModal" (click)="closeGuideModal()">
+    <div class="modal-container" (click)="$event.stopPropagation()">
+
+      <div class="modal-header">
+        <h3>{{ isEditing ? 'Edit Tour Guide' : 'Add Tour Guide' }}</h3>
+        <button class="modal-close" (click)="closeGuideModal()">×</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Name <span class="required">*</span></label>
+          <input class="form-control" [(ngModel)]="guideForm.name" placeholder="Full name">
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          <input class="form-control" type="email" [(ngModel)]="guideForm.email" placeholder="guide@example.com">
+        </div>
+        <div class="form-group">
+          <label>Phone</label>
+          <input class="form-control" [(ngModel)]="guideForm.phone" placeholder="Contact number">
+        </div>
+        <div class="form-group">
+          <label>Status</label>
+          <select class="form-control" [(ngModel)]="guideForm.status">
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-secondary" (click)="closeGuideModal()">Cancel</button>
+        <button class="btn-primary" (click)="saveGuide()" [disabled]="isLoading">
+          {{ isLoading ? 'Saving…' : 'Save' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════════════════════════════════════
+       MODAL 2 — ASSIGN DESTINATIONS TO GUIDE
+       ══════════════════════════════════════════════════════════════════════ -->
+  <div class="modal-overlay" *ngIf="showAssignModal" (click)="closeAssignModal()">
+    <div class="modal-container assign-modal" (click)="$event.stopPropagation()">
+
+      <div class="modal-header">
+        <div class="modal-header-text">
+          <h3>Assign Destinations</h3>
+          <p class="modal-subtitle">{{ selectedGuide?.name }}</p>
+        </div>
+        <button class="modal-close" (click)="closeAssignModal()">×</button>
+      </div>
+
+      <div class="modal-body">
+
+        <!-- No destinations in system -->
+        <div *ngIf="allDestinations.length === 0" class="empty-hint">
+          No destinations exist yet. Add destinations first.
+        </div>
+
+        <!-- Destination checklist -->
+        <div *ngIf="allDestinations.length > 0">
+          <p class="assign-hint">
+            Check the destinations this guide is allowed to take tourists to.
+          </p>
+
+          <div class="dest-checklist">
+            <label
+              *ngFor="let dest of allDestinations"
+              class="dest-check-row"
+              [class.selected]="isDestinationAssigned(dest.id)"
+              (click)="toggleDestinationAssignment(dest.id)">
+
+              <span class="check-box">
+                <span *ngIf="isDestinationAssigned(dest.id)" class="check-mark">✓</span>
+              </span>
+
+              <span class="dest-info">
+                <strong>{{ dest.name }}</strong>
+              </span>
+
+              <span class="dest-badge" *ngIf="isDestinationAssigned(dest.id)">Assigned</span>
+            </label>
+          </div>
+
+          <div class="selection-count" *ngIf="pendingDestinationIds.length > 0">
+            {{ pendingDestinationIds.length }}
+            {{ pendingDestinationIds.length === 1 ? 'destination' : 'destinations' }} selected
+          </div>
+        </div>
+
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-secondary" (click)="closeAssignModal()">Cancel</button>
+        <button class="btn-primary" (click)="saveAssignments()" [disabled]="isLoading">
+          {{ isLoading ? 'Saving…' : 'Save Assignments' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+</ion-content>
