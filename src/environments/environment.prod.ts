@@ -1,4 +1,3 @@
-// environment.ts (and environment.prod.ts)
 export const environment = {
   production: false,
   firebaseConfig: {
