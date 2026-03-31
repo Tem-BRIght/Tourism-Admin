@@ -26,15 +26,9 @@ import {
   getDownloadURL
 } from 'firebase/storage';
 
-const firebaseConfig = {
-  apiKey: "AIzaSyDS9QJtZBmMBbBZb6Sowxvc-PYEtlHe3LU",
-  authDomain: "seeways-be14b.firebaseapp.com",
-  projectId: "seeways-be14b",
-  storageBucket: "seeways-be14b.firebasestorage.app",
-  messagingSenderId: "53598789861",
-  appId: "1:53598789861:web:bcae5bc7423a56de49b40c",
-  measurementId: "G-KZT8FJM8LD"
-};
+import { environment } from '../../environments/environment';
+
+const app = getApps().length ? getApps()[0] : initializeApp(environment.firebaseConfig);
 
 // Prevent duplicate app initialization
 const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
